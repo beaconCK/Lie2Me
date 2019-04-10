@@ -1,0 +1,225 @@
+// JavaScript Document
+var totalFiles = 1000;
+var trainingQuestion = true;
+var trainingArray = [];
+var testingArray = [];
+var trainingFileNumberArray = [];
+var randomNumbersAssigned = false;
+let p;
+var lie_train = [];
+var lie_test = [];
+
+//************ PERCEPTRON SETUP
+class Perceptron {
+    constructor(trainingArray, lie_train, epochs=3, learn_rate=1.0) {
+        this.trainingArray = trainingArray;
+        this.lie_train = lie_train;
+        this.epochs = epochs;
+        this.learn_rate = learn_rate;
+
+        this.accuracy = 0;
+        this.samples = 0;
+
+        this.bias = 0;
+        this.weights = new Array(trainingArray[0].length);//three variables get fed into the perceptron from the training array each time: distance, pauseTime and traceSpeed
+        for (let n = 0; n < trainingArray[0].length; n++) {
+            this.weights[n] = this.getRandom();
+        }
+    }
+
+    getRandom() {
+        return Math.random() * 2 -1;
+    }
+
+    current_accuracy() {
+        return this.accuracy / this.samples;
+    }
+
+    activation(n) {
+        return n < 0 ? 0: 1;
+    }
+
+    predict(input) {
+        let total = this.bias;
+        this.weights.forEach((w, index) => {total += input[index] * w});   
+        //console.log("current guess total: " + total);
+        return this.activation(total);
+    }
+
+    fit() {
+        for (let e = 0; e< this.epochs; e ++) {
+            for  (let i = 0; i < this.trainingArray.length; i++) {
+                let prediction = this.predict(this.trainingArray[i]);
+                console.log('Expected: ' + this.lie_train[i] + ', Model output: ' + prediction);
+                parseInt(this.lie_train[i]) === parseInt(prediction) ? this.accuracy += 1 : this.accuracy -= 1;
+                this.samples++;
+                //calculate the loss
+                let loss = this.lie_train[i] - prediction;
+                //update the weights
+                for (let w = 0; w < this.weights.length; w++) {
+                    this.weights[w] += loss * this.trainingArray[i][w] * this.learn_rate;
+
+                }
+                this.bias += loss * this.learn_rate;
+            }
+            console.log("current accuracy: " + this.current_accuracy());
+        }
+        console.log("perceptron training completed");
+        console.log("****************************");
+        console.log("testing perceptron");
+        testPerceptron();
+    }
+
+}
+
+//************ PARSE CSV DATA TO PREPARE IT FOR TRAINING AND TESTING THE PERCEPTRON. CALLED FROM setup() FUNCTION IN gui.js
+function parseDataFiles() {
+    //set up the trainingFileNumberArray to contain the numbers from 1 to totalFiles, if it has not already been done
+    if (randomNumbersAssigned == false) {
+        for (var k = 0; k < totalFiles - 1; k++) {
+            trainingFileNumberArray[k] = k + 1;
+        }
+        randomNumbersAssigned = true;
+    }
+    
+    var currentFileNumber = 0;
+    if (trainingFileNumberArray.length > 0) {
+        currentFileNumber = chooseFileNumber();
+        readFileContents(currentFileNumber);
+    }
+          
+}
+
+function chooseFileNumber() {
+    //var nextFileIndex = Math.floor((Math.random() * trainingFileNumberArray.length) + 1);//choose a random file from among the data files
+    var nextFileIndex = Math.floor((Math.random() * trainingFileNumberArray.length));
+    var nextFileNumber = trainingFileNumberArray[nextFileIndex];
+    trainingFileNumberArray.splice(nextFileIndex, 1); //remove the current file number from the array so that it cannot be used again
+    console.log("number of files remaining: " + trainingFileNumberArray.length);
+    return nextFileNumber;
+}
+
+function readFileContents(currentFileNumber) {
+    var nextFileName = "data/traces_" + currentFileNumber + ".csv";
+    var txt = "";//create an empty string for the function to populate
+    
+    jQuery.get(nextFileName, function(txt) {//read the csv data from the file 
+        var lineArray = txt.split("\n");//split the csv data into lines
+        var traceSpeed = 0;
+        var distanceTravelled = 0;
+        var pauseTime = 0;
+        var lieIndicator = 0;
+        var oldX = 0;
+        var oldY = 0;
+        for (var j = 1; j < lineArray.length; j++) {//for each line of data (excluding the first line of the file, which is the header)
+            var currentLine = lineArray[j].split(",");//split the line on commas
+            var timeInt = parseInt(currentLine[13]);//look at the time on this line
+            if (timeInt < 10) {//if it is close to 0, start a new trace to record the pause time and the lie/truth for the previous trace
+                if (j > 1) {//check that this is not the first trace in the current file
+                    var previousLine = lineArray[j - 1].split(",");// get the last frame of the previous trace
+                    traceSpeed = distanceTravelled / previousLine[13];//the average speed of the last trace is the distance travelled divided by the final time from the last trace
+                    //send the previous trace's data to the array
+                    //console.log("sending last trace to arrays.");
+                    populateArrays(distanceTravelled, pauseTime, traceSpeed, lieIndicator);
+                }
+                var nextLine = lineArray[ j + 1].split(",");//split the next line on commas to access the timestamp on that line (representing the end of the pause for this trace)   
+                pauseTime = parseInt(nextLine[13]);
+                lieIndicator = (currentLine[9]);
+                oldX = currentLine[11];
+                oldY = currentLine[12];
+                distanceTravelled = 0;
+            }
+            else { //not the first line of this trace
+                var currentX = currentLine[11];
+                var currentY = currentLine[12];
+                var distanceThisFrame = Math.sqrt(Math.pow((currentX - oldX), 2) + Math.pow((currentY - oldY), 2));
+                distanceTravelled += distanceThisFrame;
+                oldX = currentX;
+                oldY = currentY;
+                //TODO handle last trace in the current file
+                if (j == lineArray.length - 1) {
+                    traceSpeed = distanceTravelled / currentLine[13];
+                    populateArrays(distanceTravelled, pauseTime, traceSpeed, lieIndicator);
+                }
+            }
+        }
+                
+        if (trainingFileNumberArray.length > 0) {//while the data files have not all been parsed, check whether the next file needs to be read in
+            readNextFile();
+        }
+        else {
+            //if the csv file parsing is complete, train the perceptron
+            console.log("******************************");
+            console.log("Training the perceptron.");
+            trainPerceptron();
+
+        } 
+    });
+}
+
+function populateArrays(distanceTravelled, pauseTime, traceSpeed, lieIndicator) {
+    if (trainingFileNumberArray.length < totalFiles) {
+        if (trainingQuestion == true) {
+            trainingArray.push([distanceTravelled, pauseTime, traceSpeed]); 
+            //console.log("trainingArray length: " + trainingArray.length);
+            lie_train.push(lieIndicator);
+            trainingQuestion = false;
+        }
+        else {
+            testingArray.push([distanceTravelled, pauseTime, traceSpeed]); 
+            lie_test.push(lieIndicator);
+            trainingQuestion = true;
+        }
+    }
+    
+}
+
+function readNextFile() {
+    parseDataFiles();
+}
+
+//************ PERCEPTRON TRAINING
+function trainPerceptron(){
+    p = new Perceptron(trainingArray, lie_train, epochs = 3, learn_rate=1.0);
+    p.fit();
+}  
+
+//************* PERCEPTRON TESTING
+function testPerceptron() {
+    for (var l = 0; l < testingArray.length; l++) {
+        var prediction = p.predict(testingArray[l]); 
+        console.log("prediction: " + prediction + ", actual: " + lie_test[l]);
+    }
+    console.log("perceptron testing complete");
+}
+			
+//************* PREPARATION OF PUCK MOVEMENT DATA FOR FEEDING INTO PERCEPTRON 
+function getThisTraceData(myTrace){
+	var totalDistance = 0;
+	var thisLie = myTrace.l;
+	var oldX = myTrace.data[0].x;
+	var oldY = myTrace.data[0].y;
+	var pauseTime = myTrace.data[1].t;
+	//var currentX = 0;
+	//var currentY = 0;
+	
+	for(var i =1; i < myTrace.data.length; i++){
+		var currentX = myTrace.data[i].x;
+		var currentY = myTrace.data[i].y;
+		var distanceThisFrame = Math.sqrt(Math.pow((currentX - oldX), 2) + Math.pow((currentY - oldY), 2));
+		oldX = currentX;
+		oldY = currentY;
+		totalDistance += distanceThisFrame;
+	}
+	var averageSpeed = totalDistance / myTrace.data[myTrace.data.length -1].t;
+    
+	console.log("Total Distance: " + totalDistance + " PauseTime: " + pauseTime + " Speed: " + averageSpeed);
+    var thisTraceArray = [totalDistance, pauseTime, averageSpeed];
+    var currentGuess = p.predict(thisTraceArray);//get the perceptron to work out if the current user's current answer is a truth or a lie
+    if (parseInt(currentGuess) == 1) {
+        alert("I detect porky pies!");
+    }
+    if (parseInt(currentGuess) == 0) {
+        alert("That's a fairly plausible answer...")
+    }
+}

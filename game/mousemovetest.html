@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lie2Me</title>
+    <script>
+      var data = [];
+
+      function start() {
+        var startTime = Date.now();
+
+        document.onmousemove = function(e) {
+          data.push({x:e.clientX, y:e.clientY, t:Date.now()-startTime});
+        };
+      }
+
+      function showMouseLogs() {
+        document.getElementById("txtOutput").innerHTML = JSON.stringify(data);
+      }
+    </script>
+  </head>
+  <body onload="start();">
+    <p>
+    	<button onclick="showMouseLogs();">Show Mouse Logs</button>
+    </p>
+    <textarea id="txtOutput"></textarea>
+  </body>
+</html>

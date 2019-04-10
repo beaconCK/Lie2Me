@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lie2Me</title>
+    <link rel="stylesheet" type="text/css" href="css/lie2me.css">
+    <link rel="stylesheet" type="text/css" href="css/jQKeyboard.css">
+    <script src="js/jquery-2.1.4.min.js"></script>
+    <script src="js/jQKeyboard.js"></script>
+    <script src="js/gui.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/msgbox.js"></script>
+    <script src="js/questions.js"></script>
+    <script src="js/pInputData.js"></script>
+  </head>
+  <body onload="setup();" style="overflow:hidden;" oncontextmenu="return false;">
+    <div id='pagebacking' style='position:absolute; left:0px; top:0px; width:100%; height:100%; background-color:#689197;'></div>
+    <div id='pageborder' style='position:absolute; left:0px; top:0px;'></div>
+
+    <div id='screen0' class='center'>
+      <h1>
+        <img src='lie2me-logo-large.jpg'><br>
+        Touch the screen to setup.
+      </h1>
+    </div>
+
+    <div id='screen1' class='center' style="display:none;">
+      <h1>
+        <img src='lie2me-logo-large.jpg'><br>
+        Touch the screen to start.
+      </h1>
+    </div>
+
+    <div id='screen2' style='position:absolute; display:none;'>
+      <h2>What is this study about?</h2>
+      <p>
+        This experiment investigates how we move when we deceive. Lying is a complex skill, since we need to know the honest answer and then make up a new answer. We are particularly interested in whether we can tell the difference between movement during lies and truths.
+      </p>
+
+      <h2>Do I have to take part?</h2>
+      <p>
+        No you don't, and you can leave the experiment at any time by pressing Exit.
+      </p>
+
+      <h2>What will happen to me if I take part?</h2>
+      <p>
+        You will move a symbol on the computer screen to say 'Yes' or 'No' to some simple statements. Sometimes, we will ask you to tell the truth and sometimes, we will ask you to lie. First, you will do some practice, so that you can get used to it. Then we will collect data from 32 statements.
+      </p>
+      <p>
+        After you finish the 32 statements, we will ask you to fill in a survey with the same questions. You should fill the survey in truthfully since this allows us to know which of the statements you lied on. At the end, we will show you an image of your lie and truth responses.
+      </p>
+
+      <h2>How long is this experiment?</h2>
+      <p>
+        It should take no longer than 10 minutes.
+      </p>
+
+      <h2>What happens at the end of the study?</h2>
+      <p>
+        You will see a picture that shows some information about how you make move when lying and telling the truth.
+      </p>
+
+      <h2>Would you like to know more about this experiment?</h2>
+      <p>
+        The contact details of the <b>Lie2Me!</b> team are available from the Science Gallery desk.<br>
+        <b>
+        If you are willing to take part, then please press the button below.
+        </b>
+      </p>
+
+      <div class='bottomCentre'><a class="btn blue" ontouchstart="onClickedInfoSheetContinue();" onclick="onClickedInfoSheetContinue();">Continue</a></div>
+      <div class='bottomRight'><a class="btn blue" ontouchstart="onClickedExit();" onclick="onClickedExit();">Exit</a></div>
+    </div>
+
+    <div id='screen3' style='position: absolute; font-size:1.5em; display:none;'>
+      <span id='sciencegallerydemographics'>
+        <p>
+          Please enter your Participant ID<br>
+          <input id='txtParticipantId' class='jQKeyboard' placeholder='Participant ID'>
+          <br><span style='font-size:0.8em;'>(Please see a Mediator if you do not have one.)</span>
+        </p>
+      </span>
+      <span id='webdemographics'>
+        <p>
+          Before we begin, please answer the following questions. If you do not wish to have this data securely stored for research purposes, simply omit answering. You may read our <a target='_blank' href='http://www.psychicsoftware.com/personal-data-lie2me/'>privacy policy here</a>.
+        </p>
+        <p>
+          What age are you?<br>  
+          <label class="container">
+            17 or 18 <input type='radio' name='rAge' id='rAge' value='<18'> 
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            18-25 <input type='radio' name='rAge' id='rAge' value='18-25'> 
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            26-35 <input type='radio' name='rAge' id='rAge' value='25-36'> 
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            36-45 <input type='radio' name='rAge' id='rAge' value='36-45'> 
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            46-55 <input type='radio' name='rAge' id='rAge' value='46-55'> 
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            Over 55 <input type='radio' name='rAge' id='rAge' value='>55'>
+            <span class="checkmark"></span>
+          </label>
+        </p>
+        <p>
+          What is your Gender?<br> 
+          <label class="container">
+            M <input type='radio' name='rGender' id='rGender' value='M'>
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            F <input type='radio' name='rGender' id='rGender' value='F'>
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            X <input type='radio' name='rGender' id='rGender' value='X' checked='checked'>
+            <span class="checkmark"></span>
+          </label>
+        </p>
+        <p>
+          Are you left-handed or right-handed?<br>
+          <label class="container">
+            Left <input type='radio' name='rHandedness' id='rHandedness' value='L'>
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            Right <input type='radio' name='rHandedness' id='rHandedness' value='R'>
+            <span class="checkmark"></span>
+          </label>
+        </p>
+        <p>
+          Have you tried this game before?<br>
+          <label class="container">
+            Yes <input type='radio' name='rPlayedBefore' id='rPlayedBefore' value='Y'>
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            No <input type='radio' name='rPlayedBefore' id='rPlayedBefore' value='N' checked='checked'>
+            <span class="checkmark"></span>
+          </label>
+        </p>
+        <p>
+          We would like to include anonymous data from this project in an Open Science repository so that future scientists can learn about deception.<br>
+          Are you willing to share your anonymous data?<br>
+          <label class="container">
+            Yes <input type='radio' name='rShareData' id='rShareData' value='Y' checked='checked'>
+            <span class="checkmark"></span>
+          </label>
+          <label class="container">
+            No <input type='radio' name='rShareData' id='rShareData' value='N'>  
+            <span class="checkmark"></span>
+          </label>       
+        </p>
+      </span>
+
+      
+        <a class="btn blue" ontouchstart="onClickedDemographicsContinue();" onclick="onClickedDemographicsContinue();">Continue</a>
+      <div class='bottomRight'><a class="btn blue" ontouchstart="onClickedExit();" onclick="onClickedExit();">Exit</a></div>
+    </div>
+
+    <div id='screen4' style='position: absolute; font-size:1.5em; display:none;'>
+      4: GSR Sensor Test.
+    </div>
+
+    <div id='divTheQuestion' class='fullScreen' style='display:none;'>
+      <h2 class='topCentre' id='theQuestion'></h2>
+    </div>
+    <div id='PuckStartArea' style='position:absolute; width:100%; height:150px; left:0px; bottom:0px; background-color:#33647a;'></div>
+
+    <!--
+    <div id='screen5' class='fullScreen'>
+      <div id='dragTargetTestLeft' class='dragTarget topLeft'>Target</div>
+      <div id='dragTargetTestRight' class='dragTarget topRight'>Target</div>
+      <div class='bottomRight'><a class="btn blue" ontouchstart="onClickedExit();" onclick="onClickedExit();">Exit</a></div>
+    </div>
+    -->
+
+    <div id='screen5' class='fullScreen' style='display:none;'>
+     <video style="width:100%; height:100%;" autoplay id='instructionsvideo'>
+      <source src="lie2meinstructions.mp4" type="video/mp4">
+    </video> 
+    </div>
+
+
+    <div id='screen6' class='fullScreen' style='display:none;'>
+      <div id='dragTargetRealLeft' class='dragTarget topLeft'>Yes</div>
+      <div id='dragTargetRealRight' class='dragTarget topRight'>No</div>
+      <div class='bottomLeft questionsLeft' id='divQsLeft'>30 Left</div>
+      <div class='bottomRight'><a class="btn blue" ontouchstart="onClickedExit();" onclick="onClickedExit();">Exit</a></div>
+    </div>
+
+    <div id='screen7' style='position:absolute; display:none;'>
+      <h1>Please complete this survey with truthful answers</h1>
+      <div id='divPostGameSurveyContent'></div>
+      <div class='bottomCentre'><a class="btn blue" ontouchstart="onClickedPostGameSurveyContinue();" onclick="onClickedPostGameSurveyContinue();">Continue</a></div>
+      <div class='bottomRight'><a class="btn blue" ontouchstart="onClickedExit();" onclick="onClickedExit();">Exit</a></div>
+    </div>
+
+    <canvas id='theCanvas' style='position:absolute; left:0px; top:0px; display:none;'></canvas>
+    <div id='screen8' class='fullScreen' style='display:none;'>
+      <h1>Your Movements.</h1>
+      <div id='dragTargetAvgLeft' class='dragTarget topLeft'>Yes</div>
+      <div id='dragTargetAvgRight' class='dragTarget topRight'>No</div>
+      <div class='bottomCentre'><a class="btn blue" ontouchstart="onClickedAverageMovementsContinue();" onclick="onClickedAverageMovementsContinue();">Continue</a></div>
+      <div class='bottomRight'><a class="btn blue" ontouchstart="onClickedExit();" onclick="onClickedExit();">Exit</a></div>
+    </div>
+
+    <div id='screen9' style='position: absolute; font-size:1.5em; display:none;'>
+      <h2>Thank you for playing Lie2me!</h2>
+      <p>Most people show wider movements when lying. Did you?</p>
+      <p>If you wish to speak to a member of the research team to discuss this project, then details are available at the Science Gallery desk. We will email you more details about the study, if you provide your email address to the Gallery.</p>
+      <p>This is a very simple test and is not a diagnostic tool. If you are worried about anything that you have learned about today, the best thing to do is to talk to a close friend or family member and, if necessary, a trained professional.</p>
+      <p>Now that you have completed the experiment, you can decide to exclude your data from our research, if you wish.<br>
+      Include my data in research? &nbsp; 
+        <label class="container">
+          Yes <input type='radio' name='rIncludeData' id='rIncludeData' value='Y'>
+          <span class="checkmark"></span>
+        </label> &nbsp; 
+        <label class="container">
+          No <input type='radio' name='rIncludeData' id='rIncludeData' value='N'>
+          <span class="checkmark"></span>
+        </label><br>
+      </p>
+      <div class='bottomCentre'><a class="btn blue" ontouchstart="onClickedExit();" onclick="onClickedExit();">Finished</a></div>
+    </div>
+
+    <div id='thePuck' style='position:absolute; left:300px; top:300px; display:none;'>
+      <img src='thepuck.png'>
+    </div>
+
+    <div id='timedFullscreenMessage' class='center' style='display:none; z-index:98;'>
+      <h2>Lie2Me<br>This is a message.</h2>
+    </div>
+
+    <div id="divAlert" style="position:absolute; width:100%; height:100%; overflow:hidden; left:0px; top:0px; text-align:center; display:none; background-color:rgba(0, 0, 0, 0.9); z-index:99;">
+        <div style="position:absolute; left:50%; top:50%; width:75%; transform: translate(-50%, -60%); z-index:4;">
+            <h1 id='alertHeading'></h1>
+            <p class='alertMsg' id='alertMsg'></p>
+            <p><textarea style='display:none; width:60%; height:6em;' id='txtUserFeedback'></textarea></p>
+            <a class="btn blue" id="btnAlertOk" ontouchstart="onClickedAlertOk();" onclick="onClickedAlertOk();">OK</a> <a class="btn blue" id="btnAlertCancel" ontouchstart="onClickedAlertCancel();" onclick="onClickedAlertCancel();">Cancel</a><br>
+        </div>
+    </div>
+  </body>
+</html>

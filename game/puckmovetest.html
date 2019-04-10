@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lie2Me</title>
+    <script>
+      var divPuck;
+      var puckhalfsize = {x:50, y:50};
+      var puckpos = {x:300, y:300};
+
+      function handleMouseMove(x,y) {
+        puckpos.x = x - puckhalfsize.x;
+        puckpos.y = y - puckhalfsize.y;
+        divPuck.style.left = puckpos.x+"px";
+        divPuck.style.top = puckpos.y+"px";        
+      }
+
+      function setup() {
+        divPuck = document.getElementById("thePuck");
+
+        document.onmousemove = function(e) {
+          handleMouseMove(e.clientX, e.clientY);
+        };
+
+        document.ontouchstart = function(e) {
+          handleMouseMove(e.touches[0].clientX, e.touches[0].clientY);
+        };
+
+        document.ontouchmove = function(e) {
+          handleMouseMove(e.touches[0].clientX, e.touches[0].clientY);
+        };
+      }
+    </script>
+  </head>
+  <body onload="setup();">
+    <div id='thePuck' style='position:absolute; left:300px; top:300px'>
+      <img src='thepuck.png'>
+    </div>
+  </body>
+</html>

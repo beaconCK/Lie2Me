@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Lie Detector</title>
+    <style>
+        body, html {
+            margin:0px;
+            padding:0px;
+            height: 100%;
+            overflow: hidden;
+            background-color: #cccccc;
+            font-weight:2em;
+            font-family: sans-serif;
+        }
+        #bgDiv {
+            position: relative;
+            width:100vw;
+            height: 100vh;
+            background-color: #ddddff;
+        }
+        .answerFieldClass {
+            position:absolute;
+            width:12vw;
+            height:12vw;
+            top:0px;
+            text-align: center;
+            background-color: rgba(100, 0, 0, 0.3);
+        }
+        .answerFieldClass p{
+            position:absolute;
+            top:30%;
+            left:42%;
+            color:#ffffff;
+            text-align: center;
+        }
+        #trueDiv {
+            right:0px;
+        }
+        #falseDiv {
+            left:0px;
+        }
+        .questionClass {
+            position: relative;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 10px;
+            text-align: center;
+            color:#008800;
+        }
+        #puckDiv {
+            position: absolute;
+            width:8vw;
+            height:8vw;
+            background-color: #0000ff;
+            left:60px;
+            bottom: 0px;
+            text-align:center;
+        }
+        #puckDiv p{
+            position:absolute;
+            top:30%;
+            left:34%;
+            color:#ffffff;
+            text-align: center;
+        }
+        #trainingDiv {
+            position:absolute;
+            top:0px;
+            left:0px;
+            width:100vw;
+            height:90vh;
+            text-align:center;
+            background-color: rgba(255, 255, 255, 0.6);
+            z-index:98;
+            display: block;
+        }
+        #waitOverlayDiv {
+            position:absolute;
+            top:0px;
+            left:0px;
+            width:100vw;
+            height:100vh;
+            text-align:center;
+            background-color:#ffffff;
+            z-index:100;
+            display:block;
+        }
+    </style>
+    <script src="js/jquery-2.1.4.min.js"></script>
+</head>
+    <body>
+        <div id="bgDiv">
+            <div id="falseDiv" class="answerFieldClass">
+                <p id="leftAnswer">No</p>
+            </div><!--end lieDiv-->
+            <div id="trueDiv" class="answerFieldClass">
+                <p id="rightAnswer">Yes</p>
+            </div><!--end trurDiv-->
+            
+            <div id="haveYouDiv" class="questionClass">
+                Have you ever
+            </div><!--end haveYouDiv-->
+            <div id="questionDiv" class="questionClass">
+            
+            </div><!--end questionDiv-->
+            <div id="puckDiv">
+                <p>Puck</p>
+            </div><!--end puckDiv-->
+            <div id="waitOverlayDiv">
+                Loading... please wait
+            </div><!--end overlayDiv-->
+        </div><!--end bgDiv-->
+        
+        <script>
+            
+            //************ DATA FILE HANDLING
+            var totalFiles = 1788;
+            var halfTextFiles = totalFiles / 2;//half of the total number of data files to be read in
+            var trainingQuestion = true;
+            var trainingArray = [];
+            var testingArray = [];
+            var trainingFileNumberArray = [];
+            var perceptronBias = 0;  
+            var x_train = [];
+            var y_train = [];
+            
+            
+            var windowWidth = window.innerWidth;
+            var windowHeight = window.innerHeight;
+            var trueDiv = document.getElementById('trueDiv');
+            var trueDivWidth = trueDiv.getBoundingClientRect().width;
+            var puckDiv = document.getElementById('puckDiv');
+            var puckWidth = puckDiv.getBoundingClientRect().width;
+            var puckX = puckDiv.getBoundingClientRect().left;
+            var puckY = puckDiv.getBoundingClientRect().top;
+            var puckIsActive = false;
+            var startTime;
+            var pauseRecorded = false;
+            var pauseTime = 0;
+            var pauseSpace = windowHeight / 2;//space at the bottom of the screen where the puck might pause while the user considers their answer.
+            var currentMouseX = 0;
+            var currentMouseY = 0;
+            var animationLoop;//to start and stop the requestAnimationFrame loop
+            var questionArray = ["made a joke?", "built a fire?", "seen a movie?", "been backpacking?", "bought a surfboard?", "been to a park?", "gone fishing?", "seen the Mona_Lisa?", "been bowling?", "been to the Olympics?", "slept in Berlin?", "baked cupcakes?", "seen an ostrich?", "collected antiques?", "slept in a hammock?", "eaten octopus?", "built a robot?", "met a professor?", "climbed a mountain?", "sat on a camel?", "been to a hospital?", "seen rugby?", "played dominoes?", "made sushi?", "seen Stonehenge?", "met Messi?", "eaten pizza?", "been to Asia?", "seen the ocean?", "been to Donegal?", "been to a restaurant?", "bought a house?"];
+            var questionCounter = 0;
+            var answersSet = false;//whether the Yes and No boxes have been set for the current question
+            
+            
+            $(document).ready(function() {
+                //************** PARSE DATA FILES FIRST
+                readNextFile();
+                
+                //*************** PUCK MOVEMENT
+                puckDiv.style.left = (windowWidth / 2) - (puckWidth / 2) + "px";
+                puckDiv.addEventListener('mousedown', function(event) {
+                    if (puckIsActive == false) {
+                        puckIsActive = true;
+                        //set the time that the movement started
+                        startTime = Date.now();
+                        //set puck centre to mouse coordinates
+                        puckDiv.style.left = event.clientX - (puckWidth / 2) + "px";
+                        puckDiv.style.top = event.clientY - (puckWidth / 2) + "px";
+                        document.getElementById('questionDiv').innerHTML = questionArray[questionCounter];
+                    }
+                    event.preventDefault();
+                });
+
+                puckDiv.addEventListener('touchstart', function(event) {
+                    if (puckIsActive == false) {
+                        puckIsActive = true;
+                        //set the time that the movement started
+                        startTime = Date.now();
+                        //set puck centre to mouse coordinates
+                        puckDiv.style.left = event.clientX - (puckWidth / 2) + "px";
+                        puckDiv.style.top = event.clientY - (puckWidth / 2) + "px";
+                        document.getElementById('questionDiv').innerHTML = questionArray[questionCounter];
+                    }
+                    event.preventDefault();
+                });
+
+                document.addEventListener('mousemove', function(event) {
+                    if (puckIsActive == true) {
+                        //update mouse coordinates
+                        currentMouseX = event.clientX;
+                        currentMouseY = event.clientY;
+                    }
+                    event.preventDefault();
+                });
+
+                document.addEventListener('touchmove', function(event) {
+                    if (puckIsActive == true) {
+                        //update touch coordinates
+                        currentMouseX = event.changedTouches[0].pageX;
+                        currentMouseY = event.changedTouches[0].pageY;
+                    }
+                    //event.preventDefault();
+                });
+                movePuck();
+            });
+            
+             
+            
+            
+            
+            function readNextFile() {
+                
+                var currentFileNumber = Math.floor((Math.random() * totalFiles) + 1);//choose a random file from among the data files
+                var alreadyUsed = false;//Keep track of whether or not this file has already been used
+                if (trainingFileNumberArray > 0) {
+                    for (var i = 0; i < trainingFileNumberArray.length; i++) {
+                        if (parseInt(trainingFileNumberArray[i]) === parseInt(currentFileNumber)) {
+                            //this file has already been dealt with
+                            alreadyUsed = true;
+                            break;
+                        }
+                    }  
+                }
+                                
+                if (alreadyUsed == false) {
+                    trainingFileNumberArray.push(currentFileNumber);
+                    //console.log(trainingFileNumberArray[trainingFileNumberArray.length - 1])
+                    var nextFileName = "data/traces_" + currentFileNumber + ".csv";
+                    var txt = "";//create an empty string for the function to populate
+                    
+                    jQuery.get(nextFileName, function(txt) {//read the csv data from the file
+                        //console.log("number of files read in: " + trainingFileNumberArray.length);
+                        //splitTxt(txt);//call function that parses the contents of txt
+                        
+                        var lineArray = txt.split("\n");//split the csv data into lines
+                        var pauseTime;
+                        var lieIndicator;
+                        var j = 1;
+                        for (j = 1; j < lineArray.length -1; j++) {//for each line of data
+                            var currentLine = lineArray[j].split(",");//split the line on commas
+                            var timeInt = parseInt(currentLine[13]);//look at the time on this line
+
+                            if (timeInt < 10) {//if it is close to 0, start a new trace to record the pause time and the lie/truth
+                                currentLine = lineArray[j+1].split(",");//split the next line on commas to access the timestamp on that line (representing the end of the pause for this trace)   
+                                pauseTime = parseInt(currentLine[13]);
+                                lieIndicator = parseInt(currentLine[9]);
+                            }
+                        }
+                        
+                        if (trainingQuestion == true) {
+                            x_train.push(pauseTime);
+                            y_train.push(lieIndicator);
+                            //console.log(pauseTime);
+                            trainingQuestion = false;
+                        }
+                        else {
+                            testingArray.push([pauseTime, lieIndicator]); 
+                            trainingQuestion = true;
+                        }
+                        
+                        
+                        if (trainingFileNumberArray.length < totalFiles) {//while the data files have not all been parsed
+                            readNextFile();
+                        }
+                        else {
+                            //data parsing complete... 
+                            //calculate the perceptron bias based on the values in x_train
+                            for (var k = 0; k < x_train.length; k++) {
+                                perceptronBias += x_train[k];
+                            }
+                            perceptronBias = Math.floor(perceptronBias / x_train.length);//use a bias that is the average of all the values in the x_train array
+                            //console.log("perceptronBias: " + perceptronBias);
+                            //console.log("x_train values: " + x_train);
+                            
+                            // train perceptron
+                            //alert("data parsing complete");
+                            console.log("******************************");
+                            console.log("Training the perceptron.");
+                            trainPerceptron();
+                            
+                        }
+                        
+                    });
+                                    
+                }
+            }
+            
+            
+           
+            
+            //************* PERCEPTRON DEFINITION
+            class Perceptron {
+                constructor(x_train, y_train, epochs=4, learn_rate=1, perceptronBias) {
+                    this.x_train = x_train;
+                    this.y_train = y_train;
+                    this.epochs = epochs;
+                    this.learn_rate = learn_rate;
+
+                    this.accuracy = 0;
+                    this.samples = 0;
+
+                    this.bias = perceptronBias;
+                    //this.weights = [this.getRandom()];
+                    this.weights = [1];
+                }
+
+                getRandom() {
+                    return Math.random() * 2 -1;
+                }
+
+                current_accuracy() {
+                    return this.accuracy / this.samples;
+                }
+
+                activation(n) {
+                    return n < 0 ? 0: 1;
+                }
+
+                predict(input) {
+                    let total = this.bias;
+                    //this.weights.forEach((w, index) => {total += input[index] * w}); 
+                    total += input * this.weights[0];
+                    //console.log("current guess total: " + total);
+                    return this.activation(total);
+                }
+
+                fit() {
+                    for (let e = 0; e < this.epochs; e ++) {
+                        for  (let i = 0; i < this.x_train.length; i++) {
+                            let prediction = this.predict(this.x_train[i]);
+                            console.log('Expected: ' + this.y_train[i] + ' , Model output: ' + prediction);
+                            this.y_train[i] === prediction ? this.accuracy += 1 : this.accuracy -= 1;
+                            this.samples++;
+                            //calculate the loss
+                            let loss = this.y_train[i] - prediction;
+                            //update the weights
+                            //for (let w = 0; w < this.weights.length; w++) {
+                                //this.weights[w] += loss * this.x_train[i][w] * this.learn_rate;
+
+                            //}
+                            this.weights[0] += loss * this.x_train[i] * this.learn_rate;
+                            this.bias += loss * this.learn_rate;
+                            //console.log("adjusted bias: " + bias);
+
+                        }
+                        console.log("current accuracy: " + this.current_accuracy());
+                    }
+                }
+
+            }
+            
+            
+            let p = new Perceptron(x_train, y_train, epochs=4, learn_rate=1, perceptronBias);
+            //************* PERCEPTRON TRAINING        
+            function trainPerceptron() {
+                p.fit();
+                console.log("******************************");
+                console.log("testing the perceptron");
+                testPerceptron();
+            }
+            
+            //************* PERCEPTRON TESTING
+            function testPerceptron() {
+                for (var l = 0; l < testingArray.length; l++) {
+                    var prediction = p.predict(testingArray[l][0]); 
+                    console.log("prediction: " + prediction + ", actual: " + testingArray[l][1]);
+                }
+                //hide the waitOverlayDiv once the data has been read in and the perceptron has been trained and tested
+                document.getElementById("waitOverlayDiv").style.display = "none";
+            }
+            
+            //************************ PERCEPTRON GUESS TRUTH OR LIE
+            function perceptronGuess(pauseTime) {
+                var prediction = parseInt(p.predict(pauseTime)); 
+                console.log("prediction: " + prediction);
+                /*
+                if (prediction == 1) {
+                    //show the "you're lying!!!!!!" screen
+                    alert("I think you're telling porky pies!");
+                }
+                else {
+                    //show the "mmm, okay, I believe you" screen.
+                    alert("mmm, okay, I believe you this time.");
+                }
+                */
+            }
+            
+            
+            //*****************PUCK MOVEMENT
+            function movePuck() {
+                if (puckIsActive == true) {
+                    //randomly set the left or right box to read "yes" and "no"
+                    if (answersSet == false) {
+                        answersSet = true;
+                        var answerSwap = Math.random() * 2 -1;
+                        if (answerSwap > 0) {
+                            document.getElementById('leftAnswer').innerHTML = "Yes";
+                            document.getElementById('rightAnswer').innerHTML = "No";
+                        }
+                        else {
+                            document.getElementById('leftAnswer').innerHTML = "No";
+                            document.getElementById('rightAnswer').innerHTML = "Yes";
+                        } 
+                    }
+                    
+                    //update the puck location on the screen
+                    puckDiv.style.left = currentMouseX - (puckWidth / 2) + "px";
+                    puckDiv.style.top = currentMouseY - (puckWidth / 2) + "px";
+                    
+                    //check whether the puck has moved more than 150px from the bottom of the screen
+                    if (pauseRecorded == false && currentMouseY < windowHeight - pauseSpace) {
+                        pauseTime = Date.now() - startTime;
+                        pauseRecorded = true;
+                        console.log("Pause time: " + pauseTime);
+                    }
+                    
+                    
+                    //check whether the puck is in the 'Yes' or No' square
+                    if (currentMouseY < trueDivWidth) {
+                        
+                        
+                        if (currentMouseX < trueDivWidth || currentMouseX > windowWidth - trueDivWidth) {
+                            console.log("puck in yes or no box.");
+                                                
+                            
+                            puckDiv.style.left = (windowWidth / 2) - (puckWidth / 2) + "px";
+                            puckDiv.style.top = windowHeight - puckWidth + "px";
+                            currentMouseX = windowWidth / 2;//set the x and y to the bottom centre of the screen to prevent puck freezing
+                            currentMouseY = windowHeight;
+                            if (questionCounter < questionArray.length) {
+                                //console.log("questiongCounter: " + questionCounter + ", trainingArray[questionCounter]: " + trainingArray[questionCounter])
+                                questionCounter++;
+                            }
+                            else {
+                                //show game over screen "How did I do?"
+                            }
+                            
+                            document.getElementById('questionDiv').innerHTML = "";
+                            //send the answer to the perceptron for consideration
+                            
+                            puckIsActive = false;
+                            pauseRecorded = false;
+                            answersSet = false;
+                            //call perceptron to guess truth or lie based on the amount of time the puck was paused while the user was deciding on their answer
+                            perceptronGuess(pauseTime);
+                        }
+                        
+                    }
+                    
+                }
+                animationLoop = window.requestAnimationFrame(movePuck);
+            }
+            
+            
+            
+        </script>
+    </body>
+</html>
