@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Lie Detector</title>
+    <style>
+        body, html {
+            margin:0px;
+            padding:0px;
+            height: 100%;
+            overflow: hidden;
+            background-color: #cccccc;
+            font-weight:2em;
+            font-family: sans-serif;
+        }
+        #bgDiv {
+            position: relative;
+            width:100vw;
+            height: 100vh;
+            background-color: #ddddff;
+        }
+        .answerFieldClass {
+            position:absolute;
+            width:12vw;
+            height:12vw;
+            top:0px;
+            text-align: center;
+            background-color: rgba(100, 0, 0, 0.3);
+        }
+        .answerFieldClass p{
+            position:absolute;
+            top:30%;
+            left:42%;
+            color:#ffffff;
+            text-align: center;
+        }
+        #trueDiv {
+            right:0px;
+        }
+        #falseDiv {
+            left:0px;
+        }
+        .questionClass {
+            position: relative;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 10px;
+            text-align: center;
+            color:#008800;
+        }
+        #puckDiv {
+            position: absolute;
+            width:8vw;
+            height:8vw;
+            background-color: #0000ff;
+            left:60px;
+            bottom: 0px;
+            text-align:center;
+        }
+        #puckDiv p{
+            position:absolute;
+            top:30%;
+            left:34%;
+            color:#ffffff;
+            text-align: center;
+        }
+        #trainingDiv {
+            position:absolute;
+            top:0px;
+            left:0px;
+            width:100vw;
+            height:90vh;
+            text-align:center;
+            background-color: rgba(255, 255, 255, 0.6);
+            z-index:98;
+            display: block;
+        }
+        #detectionDiv {
+            position:absolute;
+            top:0px;
+            left:0px;
+            width:100vw;
+            height:100vh;
+            text-align:center;
+            background-color:#ffffff;
+            z-index:100;
+            display:none;
+        }
+    </style>
+    
+</head>
+    <body>
+        <div id="bgDiv">
+            <div id="falseDiv" class="answerFieldClass">
+                <p id="leftAnswer">No</p>
+            </div><!--end lieDiv-->
+            <div id="trueDiv" class="answerFieldClass">
+                <p id="rightAnswer">Yes</p>
+            </div><!--end trurDiv-->
+            
+            <div id="haveYouDiv" class="questionClass">
+                Have you ever
+            </div><!--end haveYouDiv-->
+            <div id="questionDiv" class="questionClass">
+            
+            </div><!--end questionDiv-->
+            <div id="puckDiv">
+                <p>Puck</p>
+            </div><!--end puckDiv-->
+            
+        </div><!--end bgDiv-->
+        <script>
+            var halfTextFiles = 894;//half of the total number of data files to be read in
+            var trainingQuestion = true;
+            var trainingArray = [];
+            var testingArray = [];
+            var trainingFileNumberArray = [];
+            
+            
+            var windowWidth = window.innerWidth;
+            var windowHeight = window.innerHeight;
+            var trueDiv = document.getElementById('trueDiv');
+            var trueDivWidth = trueDiv.getBoundingClientRect().width;
+            var puckDiv = document.getElementById('puckDiv');
+            var puckWidth = puckDiv.getBoundingClientRect().width;
+            var puckX = puckDiv.getBoundingClientRect().left;
+            var puckY = puckDiv.getBoundingClientRect().top;
+            var puckIsActive = false;
+            var oldMouseX = 0;
+            var oldMouseY = 0;
+            var currentMouseX = 0;
+            var currentMouseY = 0;
+            var animationLoop;//to start and stop the requestAnimationFrame loop
+            var questionCounter = 0;
+            var answersSet = false;
+            
+            
+            
+            $(document).ready(function() {
+                generateNextFileName();
+                puckDiv.style.left = (windowWidth / 2) - (puckWidth / 2) + "px";
+            
+            });
+            
+            function generateNextFileName() {
+                
+                var currentFileNumber = Math.floor((Math.random() * 1788) + 1);//choose a random file from among the data files
+                var alreadyUsed = false;//Keep track of whether or not this file has already been used
+                if (trainingFileNumberArray > 0) {
+                    for (var i = 0; i < trainingFileNumberArray.length; i++) {
+                        if (parseInt(trainingFileNumberArray[i]) === parseInt(currentFileNumber)) {
+                            //this file has already been dealt with
+                            alreadyUsed = true;
+                            console.log("alreadyUsed: " + alreadyUsed + ", length of trainingArray: " + trainingArray.length);
+                            break;
+                        }
+                    }  
+                }
+                                
+                if (alreadyUsed == false) {
+                    trainingFileNumberArray.push(currentFileNumber);
+                    //console.log(trainingFileNumberArray[trainingFileNumberArray.length - 1])
+                    var nextFileName = "data/traces_" + currentFileNumber + ".csv";
+                    var txt = "";//create an empty string for the function to populate
+                    
+                    jQuery.get(nextFileName, function(txt) {//read the csv data from the file
+                        console.log("number of files read in: " + trainingFileNumberArray.length);
+                        //splitTxt(txt);//call function that parses the contents of txt
+                        
+                        var lineArray = txt.split("\n");//split the csv data into lines
+                        var pauseTime;
+                        var lieIndicator;
+                        var j = 1;
+                        for (j = 1; j < lineArray.length -1; j++) {//for each line of data
+                            var currentLine = lineArray[j].split(",");//split the line on commas
+                            var timeInt = parseInt(currentLine[13]);//look at the time on this line
+
+                            if (timeInt < 10) {//if it is close to 0, start a new trace to record the pause time and the lie/truth
+                                currentLine = lineArray[j+1].split(",");//split the next line on commas to access the timestamp on that line (representing the end of the pause for this trace)   
+                                pauseTime = parseInt(currentLine[13]);
+                                lieIndicator = parseInt(currentLine[9]);
+                                //console.log("pauseTime: " + pauseTime + ", lie: " + lieIndicator);
+                                //addToArray(pauseTime, lieIndicator);
+                            }
+                        }
+                        
+                        if (trainingQuestion == true) {
+                            trainingArray.push([pauseTime, lieIndicator]);
+                            //console.log(pauseTime);
+                            trainingQuestion = false;
+                        }
+                        else {
+                            testingArray.push([pauseTime, lieIndicator]); 
+                            trainingQuestion = true;
+                        }
+                        
+                        
+                        if (trainingFileNumberArray.length < 1788) {//while the data files have not all been parsed
+                            generateNextFileName();
+                        }
+                        
+                    });
+                                    
+                }
+            }
+            
+            var perceptronBias= 0;
+            //Perceptron definition
+            class Perceptron {
+                constructor(x_train, y_train, epochs=1000, learn_rate=0.1, perceptronBias) {
+                    this.x_train = x_train;
+                    this.y_train = y_train;
+                    this.epochs = epochs;
+                    this.learn_rate = learn_rate;
+
+                    this.accuracy = 0;
+                    this.samples = 0;
+
+                    this.bias = perceptronBias;
+                    //this.weights = [this.getRandom()];
+                    this.weights = [1];
+                }
+
+                getRandom() {
+                    return Math.random() * 2 -1;
+                }
+
+                current_accuracy() {
+                    return this.accuracy / this.samples;
+                }
+
+                activation(n) {
+                    return n < 0 ? 0: 1;
+                }
+
+                predict(input) {
+                    let total = this.bias;
+                    //this.weights.forEach((w, index) => {total += input[index] * w}); 
+                    total += input * this.weights[0];
+                    console.log("current guess total: " + total);
+                    return this.activation(total);
+                }
+
+                fit() {
+                    for (let e = 0; e < this.epochs; e ++) {
+                        for  (let i = 0; i < this.x_train.length; i++) {
+                            let prediction = this.predict(this.x_train[i]);
+                            console.log('Expected: ' + this.y_train[i] + ' , Model output: ' + prediction);
+                            this.y_train[i] === prediction ? this.accuracy += 1 : this.accuracy -= 1;
+                            this.samples++;
+                            //calculate the loss
+                            let loss = this.y_train[i] - prediction;
+                            //update the weights
+                            //for (let w = 0; w < this.weights.length; w++) {
+                                //this.weights[w] += loss * this.x_train[i][w] * this.learn_rate;
+
+                            //}
+                            this.weights[0] += loss * this.x_train[i] * this.learn_rate;
+                            //this.bias += loss * this.learn_rate;
+                            //console.log("adjusted bias: " + bias);
+
+                        }
+                        console.log("current accuracy: " + this.current_accuracy());
+                    }
+                    //hide the detectionDiv when perceptron has finished working
+                    //document.getElementById('detectionDiv').style.display = "none";
+                }
+
+            }
+            //end Perceptron definition
+            
+            puckDiv.addEventListener('mousedown', function(event) {
+                trainingDiv.style.display = "none";
+                if (puckIsActive == false) {
+                    distanceTravelled = 0;
+                    //set mouse coordinates to start calculating distance travelled by the puck
+                    oldMouseX = event.clientX;
+                    oldMouseY = event.clientY;
+                    currentMouseX = event.clientX;
+                    currentMouseY = event.clientY;
+                    puckIsActive = true;
+                    //set puck centre to mouse coordinates
+                    puckDiv.style.left = event.clientX - (puckWidth / 2) + "px";
+                    puckDiv.style.top = event.clientY - (puckWidth / 2) + "px";
+                    document.getElementById('questionDiv').innerHTML = questionArray[questionCounter];
+                }
+                event.preventDefault();
+            });
+
+            puckDiv.addEventListener('touchstart', function(event) {
+                trainingDiv.style.display = "none";
+                if (puckIsActive == false) {
+                    distanceTravelled = 0;
+                    //set mouse coordinates to start calculating distance travelled by the puck
+                    oldMouseX = event.changedTouches[0].pageX;
+                    oldMouseY = event.changedTouches[0].pageY;
+                    currentMouseX = event.changedTouches[0].pageX;
+                    currentMouseY = event.changedTouches[0].pageY;
+                    puckIsActive = true;
+                    //set puck centre to mouse coordinates
+                    puckDiv.style.left = event.clientX - (puckWidth / 2) + "px";
+                    puckDiv.style.top = event.clientY - (puckWidth / 2) + "px";
+                    document.getElementById('questionDiv').innerHTML = questionArray[questionCounter];
+                }
+                event.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function(event) {
+                if (puckIsActive == true) {
+                    //update mouse coordinates
+                    currentMouseX = event.clientX;
+                    currentMouseY = event.clientY;
+                }
+                event.preventDefault();
+            });
+
+            document.addEventListener('touchmove', function(event) {
+                if (puckIsActive == true) {
+                    //update coordinates
+                    currentMouseX = event.changedTouches[0].pageX;
+                    currentMouseY = event.changedTouches[0].pageY;
+                }
+                //event.preventDefault();
+            });
+
+            function movePuck() {
+                if (puckIsActive == true) {
+                        //randomly set the left or right box to read "yes" and "no"
+                        if (answersSet == false) {
+                            answersSet = true;
+                            var answerSwap = Math.random() * 2 -1;
+                            if (answerSwap > 0) {
+                                document.getElementById('leftAnswer').innerHTML = "Yes";
+                                document.getElementById('rightAnswer').innerHTML = "No";
+                            }
+                            else {
+                                document.getElementById('leftAnswer').innerHTML = "No";
+                                document.getElementById('rightAnswer').innerHTML = "Yes";
+                            } 
+                        }
+                    var distanceThisFrame = Math.sqrt(Math.pow((currentMouseX-oldMouseX),2)+Math.pow((currentMouseY-oldMouseY),2));
+                    distanceTravelled = distanceTravelled + distanceThisFrame;
+                    //console.log(distanceTravelled);
+                    //update the puck location on the screen
+                    puckDiv.style.left = currentMouseX - (puckWidth / 2) + "px";
+                    puckDiv.style.top = currentMouseY - (puckWidth / 2) + "px";
+                    oldMouseX = currentMouseX;
+                    oldMouseY = currentMouseY;
+                    //check whether the puck is in the 'Yes' or No' square
+                    if (currentMouseY < trueDivWidth) {
+                        if (currentMouseX < trueDivWidth || currentMouseX > windowWidth - trueDivWidth) {
+                            puckIsActive = false;
+                            answersSet = false;
+                            puckDiv.style.left = (windowWidth / 2) - (puckWidth / 2) + "px";
+                            puckDiv.style.top = windowHeight - puckWidth + "px";
+                            if (questionCounter < trainingArray.length) {
+                                console.log("questiongCounter: " + questionCounter + ", trainingArray[questionCounter]: " + trainingArray[questionCounter])
+                                if (trainingArray[questionCounter + 1] != null) {
+                                    if (trainingArray[questionCounter + 1] == 0) {
+                                        document.getElementById('truthLieDiv').innerHTML = "LIE";
+                                        document.getElementById('truthLieDiv').style.color = "#880000";
+                                        document.getElementById('haveYouDiv').style.color = "#880000";
+                                        document.getElementById('questionDiv').style.color = "#880000";
+                                    }
+                                    else {
+                                        document.getElementById('truthLieDiv').innerHTML = "TRUTH";
+                                        document.getElementById('truthLieDiv').style.color = "#008800";
+                                        document.getElementById('haveYouDiv').style.color = "#008800";
+                                        document.getElementById('questionDiv').style.color = "#008800";
+                                    } 
+                                }
+                                questionCounter++;
+
+                            }
+                            else {
+
+                                //set the top centre text to black, as the user is no longer being prompted to lie or tell the truth
+                                document.getElementById('truthLieDiv').innerHTML = "";
+                                document.getElementById('truthLieDiv').style.color = "#000000";
+                                document.getElementById('haveYouDiv').style.color = "#000000";
+                                document.getElementById('questionDiv').style.color = "#000000";
+                                answersArrayShort = answersArray.slice(0, trainingArray.length);
+                                for (var i = 0; i < answersArrayShort.length; i++) {
+                                    perceptronBias += answersArrayShort[i]; 
+                                }
+                                perceptronBias = perceptronBias / answersArrayShort.length;
+                                trainPerceptron();
+                            }
+                            answersArray.push(distanceTravelled);
+                            console.log("distance travelled last question: " + answersArray[questionCounter - 1]);
+                            console.log("answersArray length: " + answersArray.length);
+                            distanceTravelled = 0;
+                            document.getElementById('questionDiv').innerHTML = "";
+                        }
+                    }
+                }
+                animationLoop = window.requestAnimationFrame(movePuck);
+            }
+            movePuck();
+            
+            
+            
+            
+            function trainPerceptron() {
+                let p = new Perceptron(answersArrayShort, trainingArray, epochs=1000, learn_rate=0.1, perceptronBias);
+                //show the Section 2 screen while perceptron is running
+                document.getElementById('detectionDiv').style.display = "block";
+                p.fit();
+            }
+        </script>
+    </body>
+</html>

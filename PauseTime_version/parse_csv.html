@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>parse csv</title>
+        <script src="js/jquery3-3-1.js"></script>
+    </head>
+    <body>
+        <div id="output">
+            output here
+        </div>
+        <script>
+            
+            var halfTextFiles = 894;//half of the total number of data files to be read in
+            var trainingQuestion = true;
+            var trainingArray = [];
+            var testingArray = [];
+            var trainingFileNumberArray = [];
+            $(document).ready(function() {
+                //readNextFile();
+                
+                generateNextFileName();
+            });
+            
+            function generateNextFileName() {
+                
+                var currentFileNumber = Math.floor((Math.random() * 1788) + 1);//choose a random file from among the data files
+                var alreadyUsed = false;//Keep track of whether or not this file has already been used
+                if (trainingFileNumberArray > 0) {
+                    for (var i = 0; i < trainingFileNumberArray.length; i++) {
+                        if (parseInt(trainingFileNumberArray[i]) === parseInt(currentFileNumber)) {
+                            //this file has already been dealt with
+                            alreadyUsed = true;
+                            console.log("alreadyUsed: " + alreadyUsed + ", length of trainingArray: " + trainingArray.length);
+                            break;
+                        }
+                    }  
+                }
+                                
+                if (alreadyUsed == false) {
+                    trainingFileNumberArray.push(currentFileNumber);
+                    //console.log(trainingFileNumberArray[trainingFileNumberArray.length - 1])
+                    var nextFileName = "data/traces_" + currentFileNumber + ".csv";
+                    var txt = "";//create an empty string for the function to populate
+                    
+                    jQuery.get(nextFileName, function(txt) {//read the csv data from the file
+                        console.log("number of files read in: " + trainingFileNumberArray.length);
+                        //splitTxt(txt);//call function that parses the contents of txt
+                        
+                        var lineArray = txt.split("\n");//split the csv data into lines
+                        var pauseTime;
+                        var lieIndicator;
+                        var j = 1;
+                        for (j = 1; j < lineArray.length -1; j++) {//for each line of data
+                            var currentLine = lineArray[j].split(",");//split the line on commas
+                            var timeInt = parseInt(currentLine[13]);//look at the time on this line
+
+                            if (timeInt < 10) {//if it is close to 0, start a new trace to record the pause time and the lie/truth
+                                currentLine = lineArray[j+1].split(",");//split the next line on commas to access the timestamp on that line (representing the end of the pause for this trace)   
+                                pauseTime = parseInt(currentLine[13]);
+                                lieIndicator = parseInt(currentLine[9]);
+                                //console.log("pauseTime: " + pauseTime + ", lie: " + lieIndicator);
+                                //addToArray(pauseTime, lieIndicator);
+                            }
+                        }
+                        
+                        if (trainingQuestion == true) {
+                            trainingArray.push([pauseTime, lieIndicator]);
+                            //console.log(pauseTime);
+                            trainingQuestion = false;
+                        }
+                        else {
+                            testingArray.push([pauseTime, lieIndicator]); 
+                            trainingQuestion = true;
+                        }
+                        
+                        
+                        if (trainingFileNumberArray.length < 1788) {//while the data files have not all been parsed
+                            generateNextFileName();
+                        }
+                        
+                    });
+                                    
+                }
+            }
+            
+        </script>
+    
+    </body>
+</html>
